@@ -1,4 +1,4 @@
-const {db,bcrypt,send,currentUser,makeSession,setSession}=require("../_lib");
+const {db,bcrypt,send,currentUser,makeSession,setSession}=require("../../lib/publishing");
 module.exports=async function handler(req,res){
   const action=req.query.action;
   try{

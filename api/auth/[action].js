@@ -2,6 +2,7 @@ const {db,bcrypt,send,currentUser,makeSession,setSession}=require("../_lib");
 module.exports=async function handler(req,res){
   const action=req.query.action;
   try{
+    if(action==="setup-status" && req.method==="GET"){ const sql=db(); const rows=await sql`SELECT COUNT(*)::int AS count FROM admin_users`; return send(res,200,{needsSetup:rows[0].count===0}); }
     if(action==="me" && req.method==="GET"){
       const user=currentUser(req); return send(res,200,{authenticated:!!user,user:user?{username:user.username}:null});
     }

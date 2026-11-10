@@ -19,7 +19,7 @@
 <label class="check"><input type="checkbox" name="featured"> Feature this publication</label><div class="notice" id="saveNotice"></div><div class="row"><button class="btn primary" type="submit">Save publication</button><button class="btn" type="button" id="deleteBtn" hidden>Delete</button></div></form></section>
 </div>
 <script>
-const $=s=>document.querySelector(s), auth=$("#auth"),app=$("#app"),editor=$("#editor"),loginForm=$("#loginForm"),setupForm=$("#setupForm");
+const $=s=>document.querySelector(s), auth=$("#auth"),app=$("#app"),editor=$("#editor"),loginForm=$("#loginForm"),setupForm=$("#setupForm");let imageUploading=false;
 async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Request failed");return d}
 function showApp(){auth.classList.add("hidden");app.classList.remove("hidden");editor.classList.add("hidden");loadItems()}
 function showAuth(){auth.classList.remove("hidden");app.classList.add("hidden");editor.classList.add("hidden")}

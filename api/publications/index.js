@@ -1,4 +1,4 @@
-const {db,send,requireAdmin}=require("../_lib");
+const {db,send,requireAdmin}=require("../../lib/publishing");
 const clean=v=>typeof v==="string"?v.trim():"";
 const slugify=s=>s.toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,90)||"publication";
 module.exports=async function handler(req,res){

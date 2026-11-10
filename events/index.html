@@ -229,19 +229,19 @@ function openSeatDialog(item){
  intro.textContent=paid?'Enter your details to reserve a ticket. Payment will be verified by the HeartSound team.':'Enter your details to reserve a free seat.';
  content.replaceChildren();
  const form=document.createElement('form');
- form.innerHTML='<div class="field"><label for="seatName">Full name</label><input id="seatName" name="full_name" autocomplete="name" maxlength="180" required></div><div class="field"><label for="seatPhone">Phone number</label><input id="seatPhone" name="phone" type="tel" autocomplete="tel" maxlength="40" required></div><div class="field"><label for="seatEmail">Email (optional)</label><input id="seatEmail" name="email" type="email" autocomplete="email" maxlength="254"></div><div class="dialog-actions"><button class="btn primary" type="submit">Reserve my seat</button></div>';
- form.addEventListener('submit',async e=>{
+ form.innerHTML='<div class="field"><label for="seatName">Full name</label><input id="seatName" name="full_name" autocomplete="name" maxlength="180" required></div><div class="field"><label for="seatPhone">Phone number</label><input id="seatPhone" name="phone" type="tel" autocomplete="tel" maxlength="40" required></div><div class="field"><label for="seatEmail">Email (optional)</label><input id="seatEmail" name="email" type="email" autocomplete="email" maxlength="254"></div><div id="ticketChoiceField" class="field" style="display:none"><label for="ticketChoice">Choose ticket</label><select id="ticketChoice" name="ticket_option_id" required></select></div><div class="dialog-actions"><button class="btn primary" type="submit">Reserve my seat</button></div>';
+ const choice=form.querySelector("#ticketChoiceField"),select=form.querySelector("#ticketChoice"),ticketOptions=Array.isArray(item.ticket_options)?item.ticket_options.filter(x=>x.available!==false):[];\n if(paid&&ticketOptions.length){choice.style.display="grid";select.replaceChildren();ticketOptions.forEach(option=>{const opt=document.createElement("option");opt.value=option.id;opt.textContent=option.name+" · K"+Number(option.price).toFixed(2)+(option.description?" — "+option.description:"");select.append(opt)})}\n form.addEventListener('submit',async e=>{
   e.preventDefault();
   const submit=form.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent='Saving registration…';
   const f=new FormData(form);
   try{
-   const response=await fetch('/api/registrations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({publication_id:item.id,full_name:f.get('full_name'),phone:f.get('phone'),email:f.get('email')})});
+   const response=await fetch('/api/registrations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({publication_id:item.id,full_name:f.get('full_name'),phone:f.get('phone'),email:f.get('email'),ticket_option_id:f.get('ticket_option_id')})});
    const data=await response.json().catch(()=>({}));
    if(!response.ok)throw new Error(data.error||'Could not save your registration.');
    content.replaceChildren();
    const success=document.createElement('p');success.className='seat-price';success.textContent=paid?'Your ticket reservation has been recorded. Payment is pending verification.':'Your free-seat reservation has been recorded.';content.append(success);
    if(paid){
-    const price=document.createElement('div');price.className='seat-price';price.textContent='Ticket price: K'+Number(data.registration.ticket_price).toFixed(2);content.append(price);
+    const price=document.createElement('div');price.className='seat-price';price.textContent=(data.registration.ticket_option_name?data.registration.ticket_option_name+' · ':'')+'Ticket price: K'+Number(data.registration.ticket_price).toFixed(2);content.append(price);
     const list=document.createElement('ol');
     [['Make Payment','Mobile Money to +260 764 917 020. Account Name: Victoria Mhone. Send the correct amount for your ticket.'],['Send Proof of Payment','Take a screenshot of the successful transaction and send it to +260 764 917 020.'],['Payment Verification','The HeartSound team will verify your payment and update your ticket status.']].forEach(([heading,copy])=>{const li=document.createElement('li');const strong=document.createElement('strong');strong.textContent=heading+': ';li.append(strong,document.createTextNode(copy));list.append(li)});
     content.append(list);
@@ -272,7 +272,7 @@ function openSeatDialog(item){
    body.append(meta,title,desc);
    const ticket=document.createElement('div');ticket.style.cssText='color:#C49A45;font-size:13px;font-weight:650;margin:15px 0';
    const isPaid=item.ticket_type==='paid'&&Number(item.ticket_price)>0;
-   ticket.textContent=isPaid?'Paid event · K'+Number(item.ticket_price).toFixed(2):'Free event';body.append(ticket);
+   const options=Array.isArray(item.ticket_options)?item.ticket_options.filter(x=>x.available!==false):[];ticket.textContent=isPaid?(options.length?options.map(x=>x.name+' · K'+Number(x.price).toFixed(2)).join('  |  '):'Paid event · K'+Number(item.ticket_price).toFixed(2)):'Free event';body.append(ticket);
    const seat=document.createElement('button');seat.type='button';seat.className='btn primary';seat.textContent='Save a Seat';seat.addEventListener('click',()=>openSeatDialog(item));body.append(seat);
    if(item.external_url){const a=document.createElement('a');a.href=item.external_url;a.target='_blank';a.rel='noopener noreferrer';a.className='btn';a.style.marginLeft='8px';a.textContent='More details';body.append(a)}
    card.append(body);return card;

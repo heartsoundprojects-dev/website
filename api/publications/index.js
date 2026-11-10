@@ -1,5 +1,6 @@
 const {db,send,requireAdmin}=require("../../lib/publishing");
 const clean=v=>typeof v==="string"?v.trim():"";
+const ticketOptions=v=>Array.isArray(v)?v.slice(0,12).map((x,i)=>({id:String(x.id||("ticket-"+(i+1))).slice(0,80),name:clean(x.name).slice(0,80),price:Number(x.price),description:clean(x.description).slice(0,240),available:x.available!==false})).filter(x=>x.name&&Number.isFinite(x.price)&&x.price>0):[];
 const slugify=s=>s.toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,90)||"publication";
 module.exports=async function handler(req,res){
  try{
@@ -18,11 +19,11 @@ module.exports=async function handler(req,res){
    const b=req.body||{}, category=clean(b.category), title=clean(b.title);
    if(!category||!title) return send(res,400,{error:"Category and title are required"});
    const status=["draft","published","archived"].includes(b.status)?b.status:"draft";
-   const ticketType=category==="Events"&&b.ticket_type==="paid"?"paid":"free", ticketPrice=ticketType==="paid"?Number(b.ticket_price):null;
-   if(ticketType==="paid"&&(!Number.isFinite(ticketPrice)||ticketPrice<=0)) return send(res,400,{error:"Enter a valid ticket price for paid events"});
+   const ticketType=category==="Events"&&b.ticket_type==="paid"?"paid":"free", options=ticketType==="paid"?ticketOptions(b.ticket_options):[], ticketPrice=ticketType==="paid"?(options[0]?.price||Number(b.ticket_price)):null;
+   if(ticketType==="paid"&&!options.length&&(!Number.isFinite(ticketPrice)||ticketPrice<=0)) return send(res,400,{error:"Add at least one valid ticket option and price"});
    const slug=slugify(clean(b.slug)||title)+"-"+require("crypto").randomBytes(3).toString("hex");
-   const rows=await sql`INSERT INTO publications(category,title,slug,summary,body,image_url,external_url,event_date,event_end,venue,location,ticket_type,ticket_price,status,featured,published_at)
-    VALUES(${category},${title},${slug},${clean(b.summary)},${clean(b.body)},${clean(b.image_url)},${clean(b.external_url)},${b.event_date||null},${b.event_end||null},${clean(b.venue)},${clean(b.location)},${ticketType},${ticketPrice},${status},${!!b.featured},CASE WHEN ${status}='published' THEN NOW() ELSE NULL END) RETURNING *`;
+   const rows=await sql`INSERT INTO publications(category,title,slug,summary,body,image_url,external_url,event_date,event_end,venue,location,ticket_type,ticket_price,ticket_options,status,featured,published_at)
+    VALUES(${category},${title},${slug},${clean(b.summary)},${clean(b.body)},${clean(b.image_url)},${clean(b.external_url)},${b.event_date||null},${b.event_end||null},${clean(b.venue)},${clean(b.location)},${ticketType},${ticketPrice},${JSON.stringify(options)}::jsonb,${status},${!!b.featured},CASE WHEN ${status}='published' THEN NOW() ELSE NULL END) RETURNING *`;
    return send(res,201,{item:rows[0]});
   }
   return send(res,405,{error:"Method not allowed"});

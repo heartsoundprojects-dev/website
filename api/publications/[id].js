@@ -1,4 +1,4 @@
-const {db,send,requireAdmin}=require("../_lib");
+const {db,send,requireAdmin}=require("../../lib/publishing");
 const clean=v=>typeof v==="string"?v.trim():"";
 module.exports=async function handler(req,res){
  if(!requireAdmin(req,res)) return;

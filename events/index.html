@@ -298,7 +298,8 @@ function openSeatDialog(item){
   future.forEach(x=>upcoming.append(makeCard(x)));previous.forEach(x=>past.append(makeCard(x)));
   if(future.length)upcoming.nextElementSibling?.classList.add('hidden');
   if(previous.length)past.nextElementSibling?.classList.add('hidden');
-  if(!future.length)upcoming.remove();if(!previous.length)past.remove();
+  if(!future.length)upcoming.remove();
+  if(!previous.length){past.closest('section')?.remove();document.querySelector('footer')?.remove();}
  }catch(e){console.error('Events could not be loaded',e)}
 })();
 </script></body></html>

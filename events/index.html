@@ -226,21 +226,34 @@ function openSeatDialog(item){
  const paid=item.ticket_type==='paid'&&Number(item.ticket_price)>0;
  const title=seatOverlay.querySelector('#seatTitle'),intro=seatOverlay.querySelector('#seatIntro'),content=seatOverlay.querySelector('#seatContent');
  title.textContent=item.title;
- intro.textContent=paid?'Reserve your place by completing payment and sending proof for manual verification.':'Complete the details below to request your free seat.';
+ intro.textContent=paid?'Enter your details to reserve a ticket. Payment will be verified by the HeartSound team.':'Enter your details to reserve a free seat.';
  content.replaceChildren();
- if(paid){
-  const price=document.createElement('div');price.className='seat-price';price.textContent='Ticket price: K'+Number(item.ticket_price).toFixed(2);content.append(price);
-  const list=document.createElement('ol');
-  [['Make Payment','Mobile Money to +260 764 917 020. Account Name: Victoria Mhone. Send the correct amount for your preferred ticket category.'],['Send Proof of Payment','Take a screenshot of the successful transaction and send it to +260 764 917 020.'],['Payment Verification','The HeartSound team will verify the payment and confirm your ticket purchase.']].forEach(([heading,copy])=>{const li=document.createElement('li');const strong=document.createElement('strong');strong.textContent=heading+': ';li.append(strong,document.createTextNode(copy));list.append(li)});
-  content.append(list);
-  const link=document.createElement('a');link.className='btn primary';link.target='_blank';link.rel='noopener noreferrer';link.textContent='Send proof on WhatsApp';link.href='https://wa.me/260764917020?text='+encodeURIComponent('Hello HeartSound Media, I am sending proof of payment for '+item.title+'. Ticket amount: K'+Number(item.ticket_price).toFixed(2)+'.');
-  const actions=document.createElement('div');actions.className='dialog-actions';actions.append(link);content.append(actions);
- }else{
-  const form=document.createElement('form');
-  form.innerHTML='<div class="field"><label for="seatName">Full name</label><input id="seatName" name="name" autocomplete="name" required></div><div class="field"><label for="seatPhone">Phone number</label><input id="seatPhone" name="phone" type="tel" autocomplete="tel" required></div><div class="field"><label for="seatEmail">Email (optional)</label><input id="seatEmail" name="email" type="email" autocomplete="email"></div><p>Your free-seat request will be sent to HeartSound Media on WhatsApp. Your seat is confirmed when the team replies.</p><div class="dialog-actions"><button class="btn primary" type="submit">Complete free registration</button></div>';
-  form.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(form);const message='Hello HeartSound Media, I would like to register for a free seat. Event: '+item.title+'. Name: '+f.get('name')+'. Phone: '+f.get('phone')+'. Email: '+(f.get('email')||'Not provided')+'.';window.open('https://wa.me/260764917020?text='+encodeURIComponent(message),'_blank','noopener');});
-  content.append(form);
- }
+ const form=document.createElement('form');
+ form.innerHTML='<div class="field"><label for="seatName">Full name</label><input id="seatName" name="full_name" autocomplete="name" maxlength="180" required></div><div class="field"><label for="seatPhone">Phone number</label><input id="seatPhone" name="phone" type="tel" autocomplete="tel" maxlength="40" required></div><div class="field"><label for="seatEmail">Email (optional)</label><input id="seatEmail" name="email" type="email" autocomplete="email" maxlength="254"></div><div class="dialog-actions"><button class="btn primary" type="submit">Reserve my seat</button></div>';
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const submit=form.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent='Saving registration…';
+  const f=new FormData(form);
+  try{
+   const response=await fetch('/api/registrations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({publication_id:item.id,full_name:f.get('full_name'),phone:f.get('phone'),email:f.get('email')})});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(data.error||'Could not save your registration.');
+   content.replaceChildren();
+   const success=document.createElement('p');success.className='seat-price';success.textContent=paid?'Your ticket reservation has been recorded. Payment is pending verification.':'Your free-seat reservation has been recorded.';content.append(success);
+   if(paid){
+    const price=document.createElement('div');price.className='seat-price';price.textContent='Ticket price: K'+Number(data.registration.ticket_price).toFixed(2);content.append(price);
+    const list=document.createElement('ol');
+    [['Make Payment','Mobile Money to +260 764 917 020. Account Name: Victoria Mhone. Send the correct amount for your ticket.'],['Send Proof of Payment','Take a screenshot of the successful transaction and send it to +260 764 917 020.'],['Payment Verification','The HeartSound team will verify your payment and update your ticket status.']].forEach(([heading,copy])=>{const li=document.createElement('li');const strong=document.createElement('strong');strong.textContent=heading+': ';li.append(strong,document.createTextNode(copy));list.append(li)});
+    content.append(list);
+    const link=document.createElement('a');link.className='btn primary';link.target='_blank';link.rel='noopener noreferrer';link.textContent='Send proof on WhatsApp';link.href='https://wa.me/260764917020?text='+encodeURIComponent('Hello HeartSound Media, I have reserved a ticket for '+item.title+'. Name: '+f.get('full_name')+'. Phone: '+f.get('phone')+'. Amount: K'+Number(data.registration.ticket_price).toFixed(2)+'. I am sending proof of payment.');
+    const actions=document.createElement('div');actions.className='dialog-actions';actions.append(link);content.append(actions);
+   }else{
+    const note=document.createElement('p');note.textContent='The team will follow up using the contact details you provided.';content.append(note);
+    const link=document.createElement('a');link.className='btn';link.target='_blank';link.rel='noopener noreferrer';link.textContent='Notify us on WhatsApp';link.href='https://wa.me/260764917020?text='+encodeURIComponent('Hello HeartSound Media, I have reserved a free seat for '+item.title+'. Name: '+f.get('full_name')+'. Phone: '+f.get('phone')+'.');const actions=document.createElement('div');actions.className='dialog-actions';actions.append(link);content.append(actions);
+   }
+  }catch(err){const message=document.createElement('p');message.textContent=err.message;message.style.color='#e4b96b';content.append(message);submit.disabled=false;submit.textContent='Try again'}
+ });
+ content.append(form);
  seatOverlay.classList.add('open');
 }
 (async()=>{
